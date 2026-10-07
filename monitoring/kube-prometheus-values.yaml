@@ -1,0 +1,18 @@
+# Lightweight settings for kube-prometheus-stack on a laptop
+grafana:
+  adminPassword: admin            # local dev only
+prometheus:
+  prometheusSpec:
+    retention: 2d
+    scrapeInterval: 15s
+    # pick up ServiceMonitors from ANY namespace (needed for Kepler + our apps)
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    resources:
+      requests: { cpu: 200m, memory: 512Mi }
+      limits:   { memory: 1Gi }
+alertmanager:
+  alertmanagerSpec:
+    resources:
+      requests: { cpu: 50m, memory: 64Mi }
