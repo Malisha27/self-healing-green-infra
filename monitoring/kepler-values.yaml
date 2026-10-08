@@ -1,0 +1,9 @@
+# Kepler (energy exporter) settings
+namespace:
+  create: false          # namespace is created by helm --create-namespace
+serviceMonitor:
+  enabled: true          # let Prometheus scrape Kepler
+config:
+  cpu:
+    # Try real power sensors first, fall back to fake in VMs/Codespaces (no RAPL)
+    preferredMeters: [rapl, hwmon, fake]
