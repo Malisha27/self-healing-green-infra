@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Namespace
+metadata: {name: healing-agent}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: healing-agent, namespace: healing-agent}
+---
+# LEAST PRIVILEGE: read pods/logs/configmaps + patch deployments, ONLY in the 'demo' namespace.
+# No delete, no secrets, no other namespaces. A second safety layer under the agent's own guardrails.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: healing-agent, namespace: demo}
+rules:
+  - apiGroups: [""]
+    resources: [pods, pods/log, configmaps]
+    verbs: [get, list, watch]
+  - apiGroups: [apps]
+    resources: [replicasets]
+    verbs: [get, list]
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get, list, patch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: healing-agent, namespace: demo}
+subjects: [{kind: ServiceAccount, name: healing-agent, namespace: healing-agent}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: healing-agent}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: healing-agent, namespace: healing-agent, labels: {app: healing-agent}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: healing-agent}}
+  template:
+    metadata: {labels: {app: healing-agent}}
+    spec:
+      serviceAccountName: healing-agent
+      containers:
+        - name: agent
+          image: healing-agent:v1
+          imagePullPolicy: IfNotPresent
+          ports: [{name: http, containerPort: 8085}]
+          env:
+            - {name: APPROVAL_MODE, value: "auto"}
+            - {name: BRAIN, value: "llm"}
+            - {name: WATCH_NAMESPACE, value: "demo"}
+            - {name: LLM_MODEL, value: "openai/gpt-oss-120b"}
+            - {name: PROM_URL, value: "http://monitoring-kube-prometheus-prometheus.monitoring.svc:9090"}
+            - name: GROQ_API_KEY
+              valueFrom: {secretKeyRef: {name: groq-api, key: GROQ_API_KEY}}
+          resources:
+            requests: {cpu: 50m, memory: 256Mi}
+            limits:   {cpu: 500m, memory: 768Mi}
+          readinessProbe: {httpGet: {path: /healthz, port: 8085}, initialDelaySeconds: 5, periodSeconds: 10}
+          livenessProbe:  {httpGet: {path: /healthz, port: 8085}, initialDelaySeconds: 15, periodSeconds: 20}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: healing-agent, namespace: healing-agent}
+spec:
+  selector: {app: healing-agent}
+  ports: [{name: http, port: 8085, targetPort: 8085}]
