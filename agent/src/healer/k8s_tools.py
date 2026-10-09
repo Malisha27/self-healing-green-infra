@@ -21,6 +21,8 @@ def find_unhealthy_pods(namespace: str) -> list[dict]:
     """Like: kubectl get pods  -> keep only the sick ones."""
     sick = []
     for p in core.list_namespaced_pod(namespace).items:
+        if p.metadata.deletion_timestamp:   # pod is shutting down (old version) -> ignore
+            continue
         for s in (p.status.container_statuses or []):
             reason = None
             last = s.last_state.terminated
