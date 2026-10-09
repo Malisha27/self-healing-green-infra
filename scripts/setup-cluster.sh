@@ -4,7 +4,7 @@
 set -euo pipefail
 
 KIND_VERSION="v0.27.0"
-KEPLER_VERSION="${KEPLER_VERSION:-v0.10.2}"
+KEPLER_CHART_VERSION="${KEPLER_CHART_VERSION:-0.12.0}"
 
 need() { command -v "$1" >/dev/null 2>&1; }
 
@@ -40,13 +40,12 @@ helm upgrade --install monitoring prometheus-community/kube-prometheus-stack \
   --namespace monitoring --create-namespace \
   -f monitoring/kube-prometheus-values.yaml --wait --timeout 10m
 
-echo "==> 5/6 Installing Kepler ${KEPLER_VERSION} (fake CPU meter for dev)"
-helm upgrade --install kepler \
-  "https://github.com/sustainable-computing-io/kepler/releases/download/${KEPLER_VERSION}/kepler-helm-${KEPLER_VERSION}.tgz" \
-  --namespace kepler --create-namespace \
-  --set env.KEPLER_FAKE_CPU_METER=true \
-  --set serviceMonitor.enabled=true \
-  --set serviceMonitor.labels.release=monitoring
+echo "==> 5/6 Restoring kind node internet (Codespaces)"
+bash scripts/fix-network.sh
+echo "==> 5b/6 Installing Kepler ${KEPLER_CHART_VERSION} (falls back to fake meter in VMs)"
+helm upgrade --install kepler oci://quay.io/sustainable_computing_io/charts/kepler \
+  --version "${KEPLER_CHART_VERSION}" -n kepler --create-namespace \
+  -f monitoring/kepler-values.yaml --wait --timeout 5m
 
 echo "==> 6/6 Status"
 kubectl get pods -A
