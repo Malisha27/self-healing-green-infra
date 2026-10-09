@@ -13,6 +13,24 @@ prometheus:
       requests: { cpu: 200m, memory: 512Mi }
       limits:   { memory: 1Gi }
 alertmanager:
+  # Route heal="true" alerts to the self-healing agent's webhook. Everything else goes nowhere ("null").
+  config:
+    global: {resolve_timeout: 5m}
+    route:
+      receiver: "null"
+      group_by: [alertname, namespace]
+      group_wait: 10s        # wait 10s to bundle related alerts into one call
+      group_interval: 30s
+      repeat_interval: 2m    # re-ring the bell every 2 min while the problem persists
+      routes:
+        - receiver: healing-agent
+          matchers: ['heal="true"']
+    receivers:
+      - name: "null"
+      - name: healing-agent
+        webhook_configs:
+          - url: http://healing-agent.healing-agent.svc:8085/alert
+            send_resolved: false
   alertmanagerSpec:
     resources:
       requests: { cpu: 50m, memory: 64Mi }
