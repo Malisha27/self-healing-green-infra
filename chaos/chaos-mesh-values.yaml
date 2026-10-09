@@ -1,0 +1,11 @@
+chaosDaemon:
+  runtime: containerd
+  socketPath: /run/containerd/containerd.sock
+  resources:
+    requests: {cpu: 10m, memory: 64Mi}
+controllerManager:
+  replicaCount: 1
+  resources:
+    requests: {cpu: 10m, memory: 64Mi}
+dashboard:
+  create: false
