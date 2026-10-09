@@ -2,3 +2,4 @@ kubernetes==31.*      # talk to the cluster (like kubectl, from Python)
 requests==2.*         # HTTP calls: Prometheus queries, Groq LLM API
 python-dotenv==1.*    # load GROQ_API_KEY etc. from .env
 pytest==8.*           # tests
+chromadb==1.*         # vector database for RAG
