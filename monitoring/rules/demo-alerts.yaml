@@ -1,0 +1,29 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: self-healing-alerts
+  namespace: monitoring
+spec:
+  groups:
+    - name: self-healing
+      rules:
+        - alert: PodCrashLooping
+          expr: max by (namespace, pod, container) (kube_pod_container_status_waiting_reason{namespace="demo", reason="CrashLoopBackOff"}) == 1
+          for: 30s
+          labels: {severity: critical, heal: "true"}
+          annotations:
+            summary: "Pod {{ $labels.pod }} is crash-looping"
+            description: "{{ $labels.namespace }}/{{ $labels.pod }} is in CrashLoopBackOff. Self-healing agent notified."
+        - alert: PodRestartingOften
+          expr: increase(kube_pod_container_status_restarts_total{namespace="demo"}[5m]) > 2
+          labels: {severity: warning, heal: "true"}
+          annotations:
+            summary: "Pod {{ $labels.pod }} restarted more than 2 times in 5 minutes"
+        - alert: NamespaceOverProvisioned
+          expr: |
+            sum by (namespace) (kube_pod_container_resource_requests{namespace="demo", resource="cpu"})
+              / sum by (namespace) (rate(container_cpu_usage_seconds_total{namespace="demo", container!=""}[10m])) > 20
+          for: 10m
+          labels: {severity: info, heal: "false"}
+          annotations:
+            summary: "{{ $labels.namespace }} reserves over 20x the CPU it uses (green waste)"
