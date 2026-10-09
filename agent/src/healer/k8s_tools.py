@@ -23,10 +23,15 @@ def find_unhealthy_pods(namespace: str) -> list[dict]:
     for p in core.list_namespaced_pod(namespace).items:
         for s in (p.status.container_statuses or []):
             reason = None
+            last = s.last_state.terminated
             if s.state.waiting and s.state.waiting.reason in BAD_REASONS:
-                reason = s.state.waiting.reason
-            elif s.last_state.terminated and s.last_state.terminated.reason == "OOMKilled":
-                reason = "OOMKilled"
+                reason = s.state.waiting.reason                      # e.g. CrashLoopBackOff right now
+            elif last and last.reason == "OOMKilled":
+                reason = "OOMKilled"                                 # killed for using too much memory
+            elif s.state.terminated and s.state.terminated.exit_code != 0:
+                reason = "CrashLoopBackOff"                          # just crashed, not restarted yet
+            elif s.restart_count >= 3 and not s.ready and last and last.exit_code != 0:
+                reason = "CrashLoopBackOff"                          # caught in the brief 'running' moment
             if reason:
                 sick.append({"pod": p.metadata.name, "namespace": namespace, "reason": reason,
                              "restarts": s.restart_count, "app": (p.metadata.labels or {}).get("app")})
