@@ -1,0 +1,2 @@
+# Control group: normal, healthy app. The agent should leave it alone.
+replicas: 1

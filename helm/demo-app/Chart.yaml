@@ -1,0 +1,5 @@
+apiVersion: v2
+name: demo-app
+description: Demo workload for Self-Healing Green Infra (healthy / over-provisioned / crash-looping)
+version: 0.1.0
+appVersion: "v1"

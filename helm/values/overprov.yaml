@@ -1,0 +1,5 @@
+# Over-provisioned "just in case": idle app, way more CPU/memory reserved than it uses.
+replicas: 2
+resources:
+  requests: {cpu: 250m, memory: 256Mi}
+  limits:   {cpu: 500m, memory: 512Mi}
