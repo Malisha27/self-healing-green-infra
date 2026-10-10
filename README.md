@@ -160,6 +160,20 @@ Detection uses **multiple signals** (waiting reason, exit code, OOMKilled, resta
 - **Unit tested** - `agent/tests/test_safety.py`, 10 tests, no cluster or LLM needed.
 - **Rightsizing is NOT automatic** - healing restores desired state (safe, reversible). Changing capacity is a business decision, so it stays human-approved and goes through Helm/Git. The `NamespaceOverProvisioned` alert is `heal="false"` on purpose.
 
+### The rightsizer: it proposes, a human merges
+
+`agent/src/healer/rightsize.py` reads each app's CPU request **from Git** (`helm/values/*.yaml`, the source of truth), asks Prometheus for the **peak** real usage, and proposes **peak × 2** (never below 10m). It only proposes when the saving is big (current ≥ 3× the proposal). Then it opens a **GitHub pull request** with the evidence. It never applies anything.
+
+```bash
+cd agent
+PYTHONPATH=src python -m healer.rightsize --namespace demo        # report only
+PYTHONPATH=src python -m healer.rightsize --namespace demo --pr   # open a PR
+```
+
+![Rightsizer PR](docs/screenshots/26-rightsizer-pr.png)
+
+First real run: `overprov-app` 250m → **10m** (peak used 2.46m), `healthy-app` and `crashloop-app` 50m → 10m. Guardrails: refuses protected namespaces, refuses a dirty working tree, never touches memory or limits. Caveat: only ~24h of data here, production should look at 7-30 days. The PR is opened with my GitHub credentials; in production it would be a bot account or GitHub App with only PR permissions.
+
 ## How the energy numbers are measured (honestly)
 
 Cloud VMs (and Codespaces) don't expose CPU power sensors (RAPL), so Kepler runs with its fake meter here. That means:
@@ -263,7 +277,7 @@ Real stuff I hit while building this:
 
 ## Roadmap
 
-- **Rightsizer that opens a PR** - the agent calculates peak usage + safety margin, edits `values.yaml` and opens a GitHub PR with the evidence. A human clicks Merge. Automated work, human judgment, everything in Git history.
+- ~~Rightsizer that opens a PR~~ ✅ built (v1). Next: 7-30 days of data, memory too, Argo CD applies on merge, a bot account for the PRs.
 - Persistent RAG memory (PersistentVolume), so the agent keeps its experience across restarts.
 - More healing actions with guardrails: OOMKilled → raise memory limit, bad rollout → rollback.
 - Escalate with a rightsizing suggestion when a heal is stuck on `Insufficient cpu`.
