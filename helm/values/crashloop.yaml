@@ -1,9 +1,10 @@
-# Broken on purpose: app needs DB_URL. The ConfigMap with DB_URL EXISTS,
-# but it is NOT attached to the pod -> CrashLoopBackOff. The agent's job: find + fix this.
 env:
-  REQUIRE_DB: "true"
+  REQUIRE_DB: 'true'
 configMap:
   create: true
   data:
-    DB_URL: "postgres://db.demo.svc.cluster.local:5432/app"
+    DB_URL: postgres://db.demo.svc.cluster.local:5432/app
 attachConfigMap: false
+resources:
+  requests:
+    cpu: 10m
