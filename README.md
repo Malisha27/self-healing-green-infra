@@ -6,7 +6,7 @@ Prometheus tells you what broke. An AI agent figures out why and fixes it. Guard
 
 **Self-healing is the means. Green is the result.**
 
-**Status:** Phase 1 working end to end (local cluster, closed loop, dashboard, experiment). Phase 2 (AWS + CI/CD) is next. Built in public, one commit at a time.
+**Status:** complete and working end to end: closed-loop healing, dashboard, before/after experiment, and a rightsizer that opens its own pull request. Built in public, one commit at a time.
 
 ![Grafana: break, heal, rightsize](docs/screenshots/22-grafana-full-story.png)
 
@@ -105,8 +105,6 @@ We didn't add capacity. We freed it.
 
 ![Architecture](docs/architecture.png)
 
-Editable source: [`docs/architecture.drawio`](docs/architecture.drawio) (open at app.diagrams.net). The diagram shows the full vision, including the Phase 2 parts (AWS, Jenkins, Argo CD).
-
 | Piece | What it does here |
 |---|---|
 | **kind** | Local Kubernetes cluster (Kubernetes IN Docker), runs in GitHub Codespaces |
@@ -119,17 +117,16 @@ Editable source: [`docs/architecture.drawio`](docs/architecture.drawio) (open at
 | **Groq (`openai/gpt-oss-120b`)** | The LLM brain. Model name lives in config, not code |
 | **ChromaDB** | RAG memory: runbooks + verified past incidents |
 
-### Tech stack: built vs planned
+### Tech stack
 
-| Area | Built (Phase 1) | Planned (Phase 2) |
-|---|---|---|
-| Containers | Docker, Kubernetes (kind), Helm | EKS |
-| Observability | Prometheus, Alertmanager, Grafana, Kepler | |
-| Chaos | Chaos Mesh | |
-| AI | Python agent, RAG with ChromaDB, Groq | Tool-calling loop, Bedrock / Ollama, LLM eval suite |
-| Cloud & IaC | | AWS (EKS, ECR, IAM), Terraform |
-| CI/CD | | Jenkins (CI + Trivy scan + LLM eval gate), Argo CD (GitOps) |
-| Config mgmt | | Ansible (node-level fixes) |
+| Area | Tools |
+|---|---|
+| Platform | GitHub Codespaces, Docker, Kubernetes (kind), Helm |
+| Observability | Prometheus, Alertmanager, Grafana, Kepler |
+| Chaos | Chaos Mesh |
+| AI | Python agent, RAG with ChromaDB (all-MiniLM-L6-v2 embeddings), LLM on Groq (`openai/gpt-oss-120b`) |
+| GitOps-style changes | Helm values in Git, rightsizer opens PRs with `gh` |
+| Testing | pytest (14 tests, no cluster or LLM needed) |
 
 ## How it works
 
@@ -257,9 +254,8 @@ k8s/              kind config + agent manifests (RBAC, Deployment, Service)
 monitoring/       Prometheus/Kepler values, alert rules, Grafana dashboard
 runbooks/         Knowledge the agent retrieves (RAG)
 scripts/          setup, resume, fix-network, teardown, experiment
-docs/             architecture (png + drawio) + screenshots
-evals/            (Phase 2) LLM scenario evaluation suite
-ansible/          (Phase 2) node and OS-level remediation playbooks
+docs/             architecture + screenshots
+results/          experiment windows + summary
 ```
 
 ## Lessons learned
@@ -275,18 +271,9 @@ Real stuff I hit while building this:
 - **kind in Codespaces loses internet on restart** (iptables legacy vs nft). `scripts/fix-network.sh` fixes it.
 - **Special characters in a Grafana panel title** (÷, ×) broke the queries with a 400. Plain titles only.
 
-## Roadmap
-
-- ~~Rightsizer that opens a PR~~ ✅ built (v1). Next: 7-30 days of data, memory too, Argo CD applies on merge, a bot account for the PRs.
-- Persistent RAG memory (PersistentVolume), so the agent keeps its experience across restarts.
-- More healing actions with guardrails: OOMKilled → raise memory limit, bad rollout → rollback.
-- Escalate with a rightsizing suggestion when a heal is stuck on `Insufficient cpu`.
-- Run on AWS: Terraform + EKS + ECR, Bedrock as an LLM option, Argo CD for GitOps.
-- CI: Jenkins + Trivy scan + an LLM eval suite as a quality gate.
-
 ## Talk
 
-Built for my talk **"Self-Healing Infra is Green Infra: Using AI to Cut Kubernetes Waste Without Breaking Things"** at the **Cloud Native Pune x Docker Pune** meetup, **17 Oct 2026**.
+Presented it for my talk **"Self-Healing Infra is Green Infra: Using AI to Cut Kubernetes Waste Without Breaking Things"** at the **Cloud Native Pune x Docker Pune** meetup, **17 Oct 2026**.
 
 ## Author
 
