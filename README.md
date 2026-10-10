@@ -105,6 +105,8 @@ We didn't add capacity. We freed it.
 
 ![Architecture](docs/architecture.png)
 
+Editable source: [`docs/architecture.drawio`](docs/architecture.drawio) (open at app.diagrams.net).
+
 | Piece | What it does here |
 |---|---|
 | **kind** | Local Kubernetes cluster (Kubernetes IN Docker), runs in GitHub Codespaces |
@@ -273,7 +275,7 @@ Real stuff I hit while building this:
 
 ## Talk
 
-Presented it for my talk **"Self-Healing Infra is Green Infra: Using AI to Cut Kubernetes Waste Without Breaking Things"** at the **Cloud Native Pune x Docker Pune** meetup, **17 Oct 2026**.
+Built for my talk **"Self-Healing Infra is Green Infra: Using AI to Cut Kubernetes Waste Without Breaking Things"** at the **Cloud Native Pune x Docker Pune** meetup, **17 Oct 2026**.
 
 ## Author
 
