@@ -67,11 +67,21 @@ Same workload, same failures (Chaos Mesh kills a pod every 5 min + a config bug 
 
 | Metric | Setup A: over-provisioned, no agent | Setup B: rightsized + agent | Change |
 |---|---|---|---|
-| CPU reserved | _TBD_ | _TBD_ | _TBD_ |
-| Availability (SLO) | _TBD_ | _TBD_ | _TBD_ |
-| Config bug MTTR | _TBD_ | _TBD_ | _TBD_ |
-| Energy (kWh, estimated) | _TBD_ | _TBD_ | _TBD_ |
-| CO2 (kg, estimated) | _TBD_ | _TBD_ | _TBD_ |
+| CPU reserved (avg) | 0.601 cores | 0.176 cores | **-71%** |
+| Availability (avg) | 77.5% | 98.3% | **+20.8 pts** |
+| Config bug | never healed (still broken after 18 min) | healed, agent MTTR **7.8 s** (~2 min bug → healthy incl. alert wait) | fixed vs not fixed |
+| Over-provisioning | 173x | 22x | **-87%** |
+| Est. power | 2.40 W | 0.71 W | **-71%** |
+| Est. energy (if run for a year) | 21.1 kWh/yr | 6.2 kWh/yr | **-71%** |
+| Est. CO2 (if run for a year) | 14.7 kg/yr | 4.3 kg/yr | **-71%** |
+
+**Greener AND more reliable, at the same time.** Numbers come from `scripts/results.sh` (Prometheus averages over each exact window, saved in `results/`).
+
+Honest notes:
+- Setup B's numbers **include the agent's own CPU** (`healing-agent` namespace). The healer isn't free, and it's counted.
+- "Used" CPU is higher in B (0.0079 vs 0.0035 cores) because a healthy app plus the agent actually do work, while a crash-looping app mostly sits in back-off.
+- B isn't 100% because pod-kills still cause short dips, and the alert waits a bit (`for:`) before firing, to avoid false alarms.
+- Tiny absolute numbers (it's a demo namespace). The **ratio** is the point.
 
 ### Plot twist: waste blocked the healing 🤯
 
